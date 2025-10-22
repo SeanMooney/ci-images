@@ -3,7 +3,7 @@ name: Build and Push Images
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - 'ubuntu-22.04/**'
       - 'ubuntu-24.04/**'
