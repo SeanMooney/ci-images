@@ -2,30 +2,53 @@
 
 Custom container images for Zuul CI testing with SSH server, Python, and Ansible runtime requirements pre-installed.
 
+## Repository Structure
+
+```
+ci-images/
+├── .github/workflows/
+│   └── build-and-push.yml     # GitHub Actions CI/CD pipeline
+├── ubuntu-24.04/
+│   ├── Dockerfile             # Ubuntu 24.04 image definition
+│   └── entrypoint.sh          # SSH key injection script
+├── debian-13/
+│   ├── Dockerfile             # Debian 13 image definition
+│   └── entrypoint.sh          # SSH key injection script
+├── AGENTS.md                  # Guidelines for coding agents
+└── README.md                  # This file
+```
+
 ## Available Images
 
 All images are available from GitHub Container Registry:
 
-- **Ubuntu 24.04**: `ghcr.io/seanmooney/ci-test-node-ubuntu-24.04:latest`
-- **Ubuntu 22.04**: `ghcr.io/seanmooney/ci-test-node-ubuntu-22.04:latest`
-- **Debian 13**: `ghcr.io/seanmooney/ci-test-node-debian-13:latest`
+| Image | Base OS | Size | Use Case |
+|-------|---------|------|----------|
+| **Ubuntu 24.04** | `ghcr.io/seanmooney/ci-test-node-ubuntu-24.04:latest` | ~450MB | Modern Ubuntu with latest packages |
+| **Debian 13** | `ghcr.io/seanmooney/ci-test-node-debian-13:latest` | ~420MB | Minimal stable base, smaller footprint |
 
 ## Features
 
-✅ **SSH Server** - OpenSSH server pre-configured for key-based authentication
-✅ **Python 3** - Python 3 with pip, apt, and dev packages
-✅ **POSIX Tools** - Standard Unix utilities for CI workflows
-✅ **Build Tools** - build-essential for compiling software
-✅ **Zuul User** - Pre-configured `zuul` user with sudo access
-✅ **Ansible Ready** - All dependencies for Ansible playbook execution
+✅ **SSH Server** - OpenSSH server pre-configured for key-based authentication  
+✅ **Python 3** - Python 3 with pip, apt, and dev packages  
+✅ **POSIX Tools** - Standard Unix utilities for CI workflows  
+✅ **Build Tools** - build-essential for compiling software  
+✅ **Zuul User** - Pre-configured `zuul` user with sudo access  
+✅ **Ansible Ready** - All dependencies for Ansible playbook execution  
 
 ## Installed Packages
 
+### Common Packages (All Images)
 - openssh-server
 - python3, python3-pip, python3-apt, python3-dev
 - sudo, git, curl, wget
-- ca-certificates, gnupg, lsb-release, software-properties-common
+- ca-certificates, gnupg, lsb-release
 - build-essential
+- iproute2
+- python3-boto3
+
+### Ubuntu 24.04 Specific
+- software-properties-common (Ubuntu PPA support)
 
 ## Usage with Zuul Nodepool
 
@@ -55,15 +78,15 @@ labels:
 
 ```yaml
 labels:
-  - name: ubuntu-24-04-pod
+  - name: debian-13-pod
     type: pod
     python-path: /usr/bin/python3
     cpu: 2
     memory: 2048
     spec:
       containers:
-        - name: ubuntu-24-04-pod
-          image: ghcr.io/seanmooney/ci-test-node-ubuntu-24.04:latest
+        - name: debian-13-pod
+          image: ghcr.io/seanmooney/ci-test-node-debian-13:latest
           imagePullPolicy: Always
           volumeMounts:
             - name: ssh-keys
@@ -97,10 +120,6 @@ cd ci-images
 cd ubuntu-24.04
 docker build -t ci-test-node-ubuntu-24.04 .
 
-# Build Ubuntu 22.04 image
-cd ../ubuntu-22.04
-docker build -t ci-test-node-ubuntu-22.04 .
-
 # Build Debian 13 image
 cd ../debian-13
 docker build -t ci-test-node-debian-13 .
@@ -120,9 +139,12 @@ ssh -p 2222 zuul@localhost
 
 ## Automated Builds
 
-Images are automatically built and pushed to GitHub Container Registry when changes are pushed to the `main` branch via GitHub Actions.
+Images are automatically built and pushed to GitHub Container Registry when changes are pushed to the `master` branch via GitHub Actions.
 
-See `.github/workflows/build-and-push.yml` for the workflow configuration.
+**Build Triggers:**
+- Changes to `ubuntu-24.04/**` → builds Ubuntu 24.04 image
+- Changes to `debian-13/**` → builds Debian 13 image
+- Changes to `.github/workflows/build-and-push.yml` → triggers all builds
 
 ## License
 
