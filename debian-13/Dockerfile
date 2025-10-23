@@ -1,8 +1,8 @@
 FROM debian:13
 
-# Install system packages
+# Create zuul user and configure SSH in single layer for efficiency
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     # SSH server
     openssh-server \
     # Python and dependencies
@@ -25,32 +25,38 @@ RUN apt-get update && \
     iproute2 \
     # Python packages for S3 uploads
     python3-boto3 \
+    # Create zuul user for job execution
+    && useradd -m -s /bin/bash -u 1000 zuul \
+    && echo "zuul ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/zuul \
+    && chmod 0440 /etc/sudoers.d/zuul \
+    # Configure SSH directories and permissions
+    && mkdir -p /run/sshd \
+    && mkdir -p /home/zuul/.ssh \
+    && chmod 700 /home/zuul/.ssh \
+    && chown -R zuul:zuul /home/zuul/.ssh \
+    # SSH server configuration
+    && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config \
+    && sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config \
+    && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config \
+    && sed -i 's/#PermitEmptyPasswords no/PermitEmptyPasswords no/' /etc/ssh/sshd_config \
     # Clean up
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Create zuul user for job execution
-RUN useradd -m -s /bin/bash -u 1000 zuul && \
-    echo "zuul ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/zuul && \
-    chmod 0440 /etc/sudoers.d/zuul
-
-# Configure SSH
-RUN mkdir -p /run/sshd && \
-    mkdir -p /home/zuul/.ssh && \
-    chmod 700 /home/zuul/.ssh && \
-    chown -R zuul:zuul /home/zuul/.ssh
-
-# SSH server configuration
-RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config && \
-    sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
-    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config && \
-    sed -i 's/#PermitEmptyPasswords no/PermitEmptyPasswords no/' /etc/ssh/sshd_config
+# Switch to zuul user for security
+USER zuul
 
 # Expose SSH port
 EXPOSE 22
 
-# Copy entrypoint script
-COPY entrypoint.sh /entrypoint.sh
+# Add health check for SSH service
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD pgrep sshd > /dev/null || exit 1
+
+# Copy entrypoint script and set permissions
+COPY --chown=zuul:zuul entrypoint.sh /entrypoint.sh
+USER root
 RUN chmod +x /entrypoint.sh
+USER zuul
 
 ENTRYPOINT ["/entrypoint.sh"]
