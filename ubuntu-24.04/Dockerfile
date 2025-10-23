@@ -22,9 +22,14 @@ RUN apt-get update && \
     software-properties-common \
     # Build tools (often needed for CI)
     build-essential \
+    # Network tools (needed for validate-host role)
+    iproute2 \
     # Clean up
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages for S3 uploads
+RUN pip3 install --no-cache-dir boto3
 
 # Create zuul user for job execution
 RUN useradd -m -s /bin/bash zuul && \
