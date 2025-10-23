@@ -27,7 +27,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Create zuul user for job execution
-RUN useradd -m -s /bin/bash -u 1000 zuul && \
+RUN useradd -m -s /bin/bash zuul && \
     echo "zuul ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/zuul && \
     chmod 0440 /etc/sudoers.d/zuul
 

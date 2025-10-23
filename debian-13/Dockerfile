@@ -19,7 +19,6 @@ RUN apt-get update && \
     ca-certificates \
     gnupg \
     lsb-release \
-    software-properties-common \
     # Build tools (often needed for CI)
     build-essential \
     # Clean up
