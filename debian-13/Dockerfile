@@ -21,6 +21,8 @@ RUN apt-get update && \
     lsb-release \
     # Build tools (often needed for CI)
     build-essential \
+    # Archive tools
+    unzip \
     # Network tools (needed for validate-host role)
     iproute2 \
     # Python packages for S3 uploads

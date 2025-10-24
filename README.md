@@ -14,6 +14,9 @@ ci-images/
 ├── debian-13/
 │   ├── Dockerfile             # Debian 13 image definition
 │   └── entrypoint.sh          # SSH key injection script
+├── ci-node-opencode/
+│   ├── Dockerfile             # OpenCode-enabled image definition
+│   └── entrypoint.sh          # SSH key injection script with NVM
 ├── AGENTS.md                  # Guidelines for coding agents
 └── README.md                  # This file
 ```
@@ -26,6 +29,7 @@ All images are available from GitHub Container Registry:
 |-------|---------|------|----------|
 | **Ubuntu 24.04** | `ghcr.io/seanmooney/ci-test-node-ubuntu-24.04:latest` | ~450MB | Modern Ubuntu with latest packages |
 | **Debian 13** | `ghcr.io/seanmooney/ci-test-node-debian-13:latest` | ~420MB | Minimal stable base, smaller footprint |
+| **CI Node OpenCode** | `ghcr.io/seanmooney/ci-node-opencode:latest` | ~550MB | Debian 13 + Node.js LTS + OpenCode AI |
 
 ## Features
 
@@ -34,7 +38,9 @@ All images are available from GitHub Container Registry:
 ✅ **POSIX Tools** - Standard Unix utilities for CI workflows  
 ✅ **Build Tools** - build-essential for compiling software  
 ✅ **Zuul User** - Pre-configured `zuul` user with sudo access  
-✅ **Ansible Ready** - All dependencies for Ansible playbook execution  
+✅ **Ansible Ready** - All dependencies for Ansible playbook execution
+✅ **Node.js LTS** - Latest Node.js Long Term Support with NVM
+✅ **OpenCode AI** - AI-powered coding assistant pre-installed
 
 ## Installed Packages
 
@@ -49,6 +55,11 @@ All images are available from GitHub Container Registry:
 
 ### Ubuntu 24.04 Specific
 - software-properties-common (Ubuntu PPA support)
+
+### CI Node OpenCode Specific
+- Node.js LTS (via NVM)
+- opencode-ai (global npm package)
+- curl (for NVM installation)
 
 ## Usage with Zuul Nodepool
 
@@ -101,6 +112,28 @@ labels:
                 path: authorized_keys
 ```
 
+### CI Node OpenCode with OpenCode AI
+
+```yaml
+labels:
+  - name: ci-node-opencode
+    type: pod
+    python-path: /usr/bin/python3
+    cpu: 2
+    memory: 4096  # More memory for Node.js and AI operations
+    spec:
+      containers:
+        - name: ci-node-opencode
+          image: ghcr.io/seanmooney/ci-node-opencode:latest
+          imagePullPolicy: Always
+          env:
+            - name: SSH_AUTHORIZED_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: zuul-executor-pubkey
+                  key: pubkey
+```
+
 ## User Configuration
 
 - **Username**: `zuul`
@@ -123,6 +156,10 @@ docker build -t ci-test-node-ubuntu-24.04 .
 # Build Debian 13 image
 cd ../debian-13
 docker build -t ci-test-node-debian-13 .
+
+# Build CI Node OpenCode image
+cd ../ci-node-opencode
+docker build -t ci-node-opencode .
 ```
 
 ## Testing Locally
@@ -135,6 +172,15 @@ docker run -d -p 2222:22 \
 
 # Connect via SSH
 ssh -p 2222 zuul@localhost
+
+# Test CI Node OpenCode with OpenCode AI
+docker run -d -p 2223:22 \
+  -e SSH_AUTHORIZED_KEYS="$(cat ~/.ssh/id_ed25519.pub)" \
+  ghcr.io/seanmooney/ci-node-opencode:latest
+
+# Connect via SSH and test OpenCode
+ssh -p 2223 zuul@localhost
+opencode --help
 ```
 
 ## Automated Builds
@@ -144,6 +190,7 @@ Images are automatically built and pushed to GitHub Container Registry when chan
 **Build Triggers:**
 - Changes to `ubuntu-24.04/**` → builds Ubuntu 24.04 image
 - Changes to `debian-13/**` → builds Debian 13 image
+- Changes to `ci-node-opencode/**` → builds CI Node OpenCode image
 - Changes to `.github/workflows/build-and-push.yml` → triggers all builds
 
 ## License
