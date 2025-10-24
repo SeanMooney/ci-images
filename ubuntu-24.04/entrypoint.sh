@@ -16,7 +16,9 @@ if [ -f /ssh-keys/authorized_keys ]; then
 fi
 
 # Generate host keys if they don't exist
-ssh-keygen -A
+if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
+    sudo ssh-keygen -A
+fi
 
-# Start SSH daemon in foreground
-exec /usr/sbin/sshd -D -e
+# Start SSH daemon in foreground (must run as root)
+exec sudo /usr/sbin/sshd -D -e

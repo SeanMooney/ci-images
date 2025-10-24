@@ -21,6 +21,10 @@ WORKDIR /home/zuul
 # - Automatically adds PATH configuration to ~/.bashrc for SSH sessions
 RUN curl -fsSL https://opencode.ai/install | bash
 
+# Verify OpenCode installation and confirm image build
+RUN opencode --version && \
+    echo "OpenCode CI image build confirmed successfully"
+
 # Add OpenCode to PATH for non-interactive shells and direct execution
 # Note: .bashrc is already configured by the install script for interactive/SSH sessions
 ENV PATH="/home/zuul/.opencode/bin:${PATH}"
