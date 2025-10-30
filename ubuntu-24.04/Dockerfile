@@ -24,6 +24,8 @@ RUN apt-get update && \
     build-essential \
     # Network tools (needed for validate-host role)
     iproute2 \
+    # File synchronization tools
+    rsync \
     # Python packages for S3 uploads
     python3-boto3 \
     # Create zuul user for job execution

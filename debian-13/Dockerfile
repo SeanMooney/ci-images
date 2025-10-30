@@ -23,6 +23,7 @@ RUN apt-get update && \
     build-essential \
     # Archive tools
     unzip \
+    rsync \
     # Network tools (needed for validate-host role)
     iproute2 \
     # Python packages for S3 uploads
