@@ -16,6 +16,9 @@ RUN apt-get update && \
     curl \
     wget \
     # POSIX tools
+    nano \
+    tree \
+    less \
     ca-certificates \
     gnupg \
     lsb-release \
