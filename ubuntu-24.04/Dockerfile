@@ -28,8 +28,12 @@ RUN apt-get update && \
     acl \
     # Python packages for S3 uploads
     python3-boto3 \
-    # Create zuul user for job execution
-    && useradd -m -s /bin/bash -u 1000 zuul \
+    # Clean up
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create zuul user for job execution
+RUN useradd -m -s /bin/bash -u 1001 zuul \
     && echo "zuul ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/zuul \
     && chmod 0440 /etc/sudoers.d/zuul \
     # Configure SSH directories and permissions
@@ -45,16 +49,10 @@ RUN apt-get update && \
     # Uncomment and enable all host key types
     && sed -i 's/^#*HostKey \/etc\/ssh\/ssh_host_rsa_key/HostKey \/etc\/ssh\/ssh_host_rsa_key/' /etc/ssh/sshd_config \
     && sed -i 's/^#*HostKey \/etc\/ssh\/ssh_host_ecdsa_key/HostKey \/etc\/ssh\/ssh_host_ecdsa_key/' /etc/ssh/sshd_config \
-    && sed -i 's/^#*HostKey \/etc\/ssh\/ssh_host_ed25519_key/HostKey \/etc\/ssh\/ssh_host_ed25519_key/' /etc/ssh/sshd_config \
-    # Clean up
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && sed -i 's/^#*HostKey \/etc\/ssh\/ssh_host_ed25519_key/HostKey \/etc\/ssh\/ssh_host_ed25519_key/' /etc/ssh/sshd_config
 
 # Set working directory to zuul's home directory
 WORKDIR /home/zuul
-
-# Switch to zuul user for security
-USER zuul
 
 # Expose SSH port
 EXPOSE 22
@@ -67,6 +65,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 COPY --chown=zuul:zuul entrypoint.sh /entrypoint.sh
 USER root
 RUN chmod +x /entrypoint.sh
+
+# Switch to zuul user for security
 USER zuul
 
 ENTRYPOINT ["/entrypoint.sh"]
