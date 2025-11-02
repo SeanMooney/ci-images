@@ -16,9 +16,6 @@ RUN apt-get update && \
     curl \
     wget \
     # POSIX tools
-    nano \
-    tree \
-    less \
     ca-certificates \
     gnupg \
     lsb-release \
@@ -27,12 +24,12 @@ RUN apt-get update && \
     build-essential \
     # Network tools (needed for validate-host role)
     iproute2 \
-    # File synchronization tools
-    rsync \
+    # Access Control List utilities
+    acl \
     # Python packages for S3 uploads
     python3-boto3 \
     # Create zuul user for job execution
-    && useradd -m -s /bin/bash zuul \
+    && useradd -m -s /bin/bash -u 1000 zuul \
     && echo "zuul ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/zuul \
     && chmod 0440 /etc/sudoers.d/zuul \
     # Configure SSH directories and permissions
@@ -52,6 +49,9 @@ RUN apt-get update && \
     # Clean up
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Set working directory to zuul's home directory
+WORKDIR /home/zuul
 
 # Switch to zuul user for security
 USER zuul

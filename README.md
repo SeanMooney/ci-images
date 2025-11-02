@@ -17,6 +17,9 @@ ci-images/
 ├── ci-node-opencode/
 │   ├── Dockerfile             # OpenCode-enabled image definition
 │   └── entrypoint.sh          # SSH key injection script with NVM
+├── ci-node-claude-code/
+│   ├── Dockerfile             # Claude Code-enabled image definition
+│   └── .claude/                # Claude Code agent configuration directory
 ├── AGENTS.md                  # Guidelines for coding agents
 └── README.md                  # This file
 ```
@@ -30,17 +33,20 @@ All images are available from GitHub Container Registry:
 | **Ubuntu 24.04** | `ghcr.io/seanmooney/ci-test-node-ubuntu-24.04:latest` | ~450MB | Modern Ubuntu with latest packages |
 | **Debian 13** | `ghcr.io/seanmooney/ci-test-node-debian-13:latest` | ~420MB | Minimal stable base, smaller footprint |
 | **CI Node OpenCode** | `ghcr.io/seanmooney/ci-node-opencode:latest` | ~550MB | Debian 13 + Node.js LTS + OpenCode AI |
+| **CI Node Claude Code** | `ghcr.io/seanmooney/ci-node-claude-code:latest` | ~580MB | Debian 13 + Node.js LTS + Claude Code AI |
 
 ## Features
 
-✅ **SSH Server** - OpenSSH server pre-configured for key-based authentication  
-✅ **Python 3** - Python 3 with pip, apt, and dev packages  
-✅ **POSIX Tools** - Standard Unix utilities for CI workflows  
-✅ **Build Tools** - build-essential for compiling software  
-✅ **Zuul User** - Pre-configured `zuul` user with sudo access  
+✅ **SSH Server** - OpenSSH server pre-configured for key-based authentication
+✅ **Python 3** - Python 3 with pip, apt, and dev packages
+✅ **POSIX Tools** - Standard Unix utilities for CI workflows
+✅ **Build Tools** - build-essential for compiling software
+✅ **ACL Support** - Access Control List utilities for fine-grained file permissions
+✅ **Zuul User** - Pre-configured `zuul` user with sudo access
 ✅ **Ansible Ready** - All dependencies for Ansible playbook execution
 ✅ **Node.js LTS** - Latest Node.js Long Term Support with NVM
 ✅ **OpenCode AI** - AI-powered coding assistant pre-installed
+✅ **Claude Code AI** - Anthropic's AI-powered coding assistant pre-installed
 
 ## Installed Packages
 
@@ -51,6 +57,7 @@ All images are available from GitHub Container Registry:
 - ca-certificates, gnupg, lsb-release
 - build-essential
 - iproute2
+- acl (Access Control List utilities)
 - python3-boto3
 
 ### Ubuntu 24.04 Specific
@@ -60,6 +67,11 @@ All images are available from GitHub Container Registry:
 - Node.js LTS (via NVM)
 - opencode-ai (global npm package)
 - curl (for NVM installation)
+
+### CI Node Claude Code Specific
+- Node.js LTS (via NodeSource repository)
+- @anthropic-ai/claude-code (global npm package)
+- curl, gnupg (for NodeSource repository setup)
 
 ## Usage with Zuul Nodepool
 
@@ -134,6 +146,28 @@ labels:
                   key: pubkey
 ```
 
+### CI Node Claude Code with Claude Code AI
+
+```yaml
+labels:
+  - name: ci-node-claude-code
+    type: pod
+    python-path: /usr/bin/python3
+    cpu: 2
+    memory: 4096  # More memory for Node.js and AI operations
+    spec:
+      containers:
+        - name: ci-node-claude-code
+          image: ghcr.io/seanmooney/ci-node-claude-code:latest
+          imagePullPolicy: Always
+          env:
+            - name: SSH_AUTHORIZED_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: zuul-executor-pubkey
+                  key: pubkey
+```
+
 ## User Configuration
 
 - **Username**: `zuul`
@@ -160,6 +194,10 @@ docker build -t ci-test-node-debian-13 .
 # Build CI Node OpenCode image
 cd ../ci-node-opencode
 docker build -t ci-node-opencode .
+
+# Build CI Node Claude Code image
+cd ../ci-node-claude-code
+docker build -t ci-node-claude-code .
 ```
 
 ## Testing Locally
@@ -181,6 +219,15 @@ docker run -d -p 2223:22 \
 # Connect via SSH and test OpenCode
 ssh -p 2223 zuul@localhost
 opencode --help
+
+# Test CI Node Claude Code with Claude Code AI
+docker run -d -p 2224:22 \
+  -e SSH_AUTHORIZED_KEYS="$(cat ~/.ssh/id_ed25519.pub)" \
+  ghcr.io/seanmooney/ci-node-claude-code:latest
+
+# Connect via SSH and test Claude Code
+ssh -p 2224 zuul@localhost
+claude --help
 ```
 
 ## Automated Builds
@@ -191,6 +238,7 @@ Images are automatically built and pushed to GitHub Container Registry when chan
 - Changes to `ubuntu-24.04/**` → builds Ubuntu 24.04 image
 - Changes to `debian-13/**` → builds Debian 13 image
 - Changes to `ci-node-opencode/**` → builds CI Node OpenCode image
+- Changes to `ci-node-claude-code/**` → builds CI Node Claude Code image
 - Changes to `.github/workflows/build-and-push.yml` → triggers all builds
 
 ## License

@@ -29,6 +29,8 @@ RUN apt-get update && \
     rsync \
     # Network tools (needed for validate-host role)
     iproute2 \
+    # Access Control List utilities
+    acl \
     # Python packages for S3 uploads
     python3-boto3 \
     # Create zuul user for job execution
@@ -52,6 +54,9 @@ RUN apt-get update && \
     # Clean up
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Set working directory to zuul's home directory
+WORKDIR /home/zuul
 
 # Switch to zuul user for security
 USER zuul
