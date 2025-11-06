@@ -10,6 +10,7 @@ RUN apt-get update && \
     python3-pip \
     python3-apt \
     python3-dev \
+    python3.13-venv \
     # Ansible runtime requirements
     sudo \
     git \
